@@ -1,0 +1,110 @@
+/* Quản lý sinh viên — giao diện bổ sung cho Bootstrap */
+
+:root {
+    --app-bg: #f0f4f8;
+    --app-surface: #ffffff;
+    --app-accent: #1e5a8a;
+    --app-accent-soft: rgba(30, 90, 138, 0.08);
+    --app-border: #e2e8f0;
+    --app-shadow: 0 4px 24px rgba(15, 23, 42, 0.06);
+    --app-radius: 12px;
+}
+
+body {
+    font-family: system-ui, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    background: var(--app-bg);
+    color: #1e293b;
+    min-height: 100vh;
+    padding-bottom: 3rem;
+}
+
+.app-shell {
+    max-width: 960px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.page-header {
+    margin-bottom: 1.75rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--app-border);
+}
+
+.page-header h3 {
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: #0f172a;
+    margin-bottom: 0.25rem;
+}
+
+.page-header p {
+    margin: 0;
+    font-size: 0.95rem;
+    color: #64748b;
+}
+
+.panel {
+    background: var(--app-surface);
+    border-radius: var(--app-radius);
+    box-shadow: var(--app-shadow);
+    border: 1px solid var(--app-border);
+    padding: 1.25rem 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.panel-title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--app-accent);
+    margin-bottom: 1rem;
+}
+
+#search.form-control {
+    border-radius: 10px;
+    border-color: var(--app-border);
+    padding: 0.65rem 1rem;
+}
+
+#search.form-control:focus {
+    border-color: var(--app-accent);
+    box-shadow: 0 0 0 3px var(--app-accent-soft);
+}
+
+.table {
+    margin-bottom: 0;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.table thead.table-dark th {
+    font-weight: 600;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    border: none;
+}
+
+.table tbody td {
+    vertical-align: middle;
+    border-color: var(--app-border);
+}
+
+.table tbody tr:hover {
+    background-color: #f8fafc;
+}
+
+.form-section input.form-control {
+    border-radius: 10px;
+    border-color: var(--app-border);
+}
+
+.form-section input.form-control:focus {
+    border-color: var(--app-accent);
+    box-shadow: 0 0 0 3px var(--app-accent-soft);
+}
+
+.form-section .btn {
+    border-radius: 10px;
+    padding: 0.5rem 1.25rem;
+    font-weight: 600;
+}
