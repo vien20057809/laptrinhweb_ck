@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Quản lý sinh viên</title>
+    <link rel="stylesheet"
+          href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body class="container mt-4 app-shell">
+
+<header class="page-header">
+    <h3>Danh sách sinh viên</h3>
+    <p>Tra cứu, thêm mới và chỉnh sửa thông tin sinh viên.</p>
+</header>
+
+<section class="panel">
+    <input type="text" id="search" class="form-control mb-0"
+           placeholder="Tìm theo tên..." onkeyup="searchStudent()">
+</section>
+
+<section class="panel">
+<table class="table table-bordered mb-0">
+    <thead class="table-dark">
+    <tr>
+        <th>ID</th>
+        <th>Tên</th>
+        <th>Email</th>
+        <th>Hành động</th>
+    </tr>
+    </thead>
+    <tbody id="studentTable"></tbody>
+</table>
+</section>
+
+<section class="panel form-section">
+    <div class="panel-title" id="formTitle">Thêm sinh viên</div>
+    <p class="text-muted small mb-3" id="idHint">ID kiểu UUID (uniqueidentifier) do hệ thống tạo khi thêm mới. Khi sửa, chọn Sửa trên bảng.</p>
+
+<input id="id" class="form-control mb-2" placeholder="(UUID — tự tạo)" disabled>
+<input id="name" class="form-control mb-2" placeholder="Tên">
+<input id="email" class="form-control mb-2" placeholder="Email">
+
+<button class="btn btn-primary" onclick="saveStudent()">Lưu</button>
+<button class="btn btn-secondary ms-2" onclick="resetForm()">Hủy</button>
+</section>
+
+<script>
+const API = "http://localhost:8080/api/students";
+
+function escapeHtml(str) {
+    return String(str ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+}
+
+function escapeAttr(str) {
+    return String(str ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+}
+
+function renderStudentRows(data) {
+    let html = "";
+    data.forEach((s) => {
+        const idAttr = escapeAttr(String(s.id));
+        html += `
+                <tr>
+                    <td>${escapeHtml(s.id)}</td>
+                    <td>${escapeHtml(s.name)}</td>
+                    <td>${escapeHtml(s.email)}</td>
+                    <td>
+                        <button type="button" class="btn btn-warning btn-sm"
+                            data-action="edit" data-id="${idAttr}">Sửa</button>
+                        <button type="button" class="btn btn-danger btn-sm ms-2"
+                            data-action="delete" data-id="${idAttr}">Xóa</button>
+                    </td>
+                </tr>`;
+    });
+    document.getElementById("studentTable").innerHTML = html;
+}
+
+document.getElementById("studentTable").addEventListener("click", (e) => {
+    const btn = e.target.closest("button[data-action]");
+    if (!btn) return;
+    const id = btn.getAttribute("data-id");
+    if (!id) return;
+
+    if (btn.dataset.action === "edit") {
+        fetch(`${API}/${encodeURIComponent(id)}`)
+            .then((res) => {
+                if (!res.ok) throw new Error("load");
+                return res.json();
+            })
+            .then((student) => {
+                document.getElementById("id").value = student.id;
+                document.getElementById("name").value = student.name ?? "";
+                document.getElementById("email").value = student.email ?? "";
+                document.getElementById("formTitle").innerText = "Cập nhật sinh viên";
+                document.getElementById("idHint").innerText =
+                    "ID không đổi; chỉnh tên hoặc email rồi bấm Lưu.";
+            })
+            .catch(() => alert("Không tải được dữ liệu sinh viên."));
+    } else if (btn.dataset.action === "delete") {
+        deleteStudent(id);
+    }
+});
+
+function loadStudents() {
+    fetch(API)
+        .then((res) => res.json())
+        .then((data) => renderStudentRows(data));
+}
+
+function saveStudent() {
+    const idVal = document.getElementById("id").value;
+    const name = document.getElementById("name").value.trim();
+    const email = document.getElementById("email").value.trim();
+
+    if (!name || !email) {
+        alert("Vui lòng nhập tên và email.");
+        return;
+    }
+
+    if (idVal) {
+        fetch(`${API}/${encodeURIComponent(idVal)}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ name, email })
+        }).then((res) => {
+            if (!res.ok) throw new Error("update");
+            resetForm();
+            loadStudents();
+        }).catch(() => alert("Cập nhật thất bại."));
+    } else {
+        fetch(API, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ name, email })
+        }).then((res) => {
+            if (!res.ok) throw new Error("add");
+            resetForm();
+            loadStudents();
+        }).catch(() => alert("Thêm mới thất bại."));
+    }
+}
+
+function deleteStudent(id) {
+    if (confirm("Bạn có chắc muốn xóa sinh viên này?")) {
+        fetch(`${API}/${encodeURIComponent(id)}`, { method: "DELETE" })
+            .then((res) => {
+                if (!res.ok) throw new Error("delete");
+                loadStudents();
+            })
+            .catch(() => alert("Xóa thất bại."));
+    }
+}
+
+function searchStudent() {
+    const name = document.getElementById("search").value.trim();
+    if (name === "") {
+        loadStudents();
+        return;
+    }
+
+    fetch(`${API}/search?name=${encodeURIComponent(name)}`)
+        .then((res) => res.json())
+        .then((data) => renderStudentRows(data));
+}
+
+function resetForm() {
+    document.getElementById("id").value = "";
+    document.getElementById("name").value = "";
+    document.getElementById("email").value = "";
+    document.getElementById("formTitle").innerText = "Thêm sinh viên";
+    document.getElementById("idHint").innerText =
+        "ID kiểu UUID (uniqueidentifier) do hệ thống tạo khi thêm mới. Khi sửa, chọn Sửa trên bảng.";
+}
+
+loadStudents();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Quản lý ngành học</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+<div class="app-layout">
+    <aside class="app-sidebar">
+        <div class="app-brand">School Manager</div>
+        <div class="app-brand-sub">Quản lý đào tạo</div>
+        <ul class="app-menu">
+            <li><a href="/index.html" data-page="home">Trang chủ</a></li>
+            <li><a href="/students.html" data-page="students">Sinh viên</a></li>
+            <li><a href="/majors.html" data-page="majors" class="active">Ngành học</a></li>
+            <li><a href="/training-programs.html" data-page="training-programs">CTĐT</a></li>
+            <li><a href="/courses.html" data-page="courses">Học phần</a></li>
+            <li><a href="/program-courses.html" data-page="program-courses">HP trong CTĐT</a></li>
+        </ul>
+    </aside>
+
+    <main class="app-main">
+        <header class="page-header">
+            <h1>Quản lý ngành học</h1>
+            <p>Chương trình đào tạo — bảng <code>majors</code> với phân trang, lọc và xóa mềm.</p>
+        </header>
+
+        <div id="formAlert" class="alert-banner"></div>
+
+        <div class="split-layout">
+            <div>
+                <section class="panel">
+                    <div class="toolbar">
+                        <input type="text" id="search" class="form-control toolbar-grow"
+                               placeholder="Tìm mã hoặc tên ngành...">
+                        <select id="filterDept" class="form-select">
+                            <option value="">Tất cả khoa</option>
+                        </select>
+                        <select id="filterActive" class="form-select">
+                            <option value="">Mọi trạng thái</option>
+                            <option value="true">Chỉ đang hoạt động</option>
+                        </select>
+                        <select id="sortField" class="form-select">
+                            <option value="code">Sắp xếp: Mã</option>
+                            <option value="name">Sắp xếp: Tên</option>
+                            <option value="effectiveDate">Sắp xếp: Hiệu lực</option>
+                        </select>
+                        <button class="btn btn-primary btn-sm" onclick="applyFilters()">Áp dụng</button>
+                    </div>
+                </section>
+
+                <section class="panel table-panel">
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-sm mb-0">
+                            <thead>
+                            <tr>
+                                <th>Mã</th>
+                                <th>Tên ngành</th>
+                                <th>Khoa</th>
+                                <th>Hiệu lực</th>
+                                <th>Trạng thái</th>
+                                <th></th>
+                            </tr>
+                            </thead>
+                            <tbody id="majorTable"></tbody>
+                        </table>
+                    </div>
+                    <div class="pagination-bar">
+                        <span id="pageInfo">—</span>
+                        <div class="btn-group">
+                            <button class="btn btn-outline-secondary btn-sm" id="btnPrev" onclick="changePage(-1)">Trước</button>
+                            <button class="btn btn-outline-secondary btn-sm" id="btnNext" onclick="changePage(1)">Sau</button>
+                        </div>
+                    </div>
+                </section>
+            </div>
+
+            <section class="panel form-section">
+                <div class="panel-title" id="formTitle">Thêm ngành mới</div>
+                <input id="id" type="hidden">
+
+                <div class="mb-2">
+                    <label class="form-label">Mã ngành *</label>
+                    <input id="code" class="form-control" maxlength="100">
+                    <div id="errCode" class="form-error"></div>
+                </div>
+                <div class="mb-2">
+                    <label class="form-label">Tên ngành *</label>
+                    <input id="name" class="form-control" maxlength="255">
+                    <div id="errName" class="form-error"></div>
+                </div>
+                <div class="mb-2">
+                    <label class="form-label">Khoa *</label>
+                    <select id="departmentId" class="form-select"></select>
+                    <div id="errDept" class="form-error"></div>
+                </div>
+                <div class="mb-2">
+                    <label class="form-label">Mô tả</label>
+                    <textarea id="description" class="form-control" rows="2"></textarea>
+                </div>
+                <div class="row g-2 mb-2">
+                    <div class="col-12">
+                        <label class="form-label">Ngày hiệu lực</label>
+                        <input id="effectiveDate" type="datetime-local" class="form-control">
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">Ngày hết hiệu lực</label>
+                        <input id="expiryDate" type="datetime-local" class="form-control">
+                    </div>
+                </div>
+                <div class="mb-2">
+                    <label class="form-label">Người thao tác</label>
+                    <input id="actor" type="text" class="form-control" maxlength="255"
+                           placeholder="VD: admin, Nguyễn Văn A">
+                </div>
+                <div class="form-check mb-3">
+                    <input class="form-check-input" type="checkbox" id="isActive" checked>
+                    <label class="form-check-label" for="isActive">Đang hoạt động</label>
+                </div>
+
+                <button class="btn btn-primary w-100 mb-2" onclick="saveMajor()">Lưu</button>
+                <button class="btn btn-outline-secondary w-100" onclick="resetForm()">Hủy / Thêm mới</button>
+            </section>
+        </div>
+    </main>
+</div>
+
+<script src="/js/app.js"></script>
+<script>
+const API = App.baseUrl + "/api/majors";
+const DEPT_API = App.baseUrl + "/api/departments";
+App.setActiveNav("majors");
+
+let state = { page: 0, size: 8, totalPages: 0 };
+
+function statusBadge(active) {
+    return active
+        ? '<span class="badge bg-success badge-status">Hoạt động</span>'
+        : '<span class="badge bg-secondary badge-status">Khóa</span>';
+}
+
+function clearFieldErrors() {
+    ["errCode", "errName", "errDept"].forEach((id) => {
+        document.getElementById(id).textContent = "";
+    });
+}
+
+function showFieldErrors(errors) {
+    if (!errors) return;
+    if (errors.code) document.getElementById("errCode").textContent = errors.code;
+    if (errors.name) document.getElementById("errName").textContent = errors.name;
+    if (errors.departmentId) document.getElementById("errDept").textContent = errors.departmentId;
+}
+
+function buildQuery() {
+    const params = new URLSearchParams();
+    params.set("page", state.page);
+    params.set("size", state.size);
+    params.set("sort", document.getElementById("sortField").value);
+    const q = document.getElementById("search").value.trim();
+    if (q) params.set("q", q);
+    const dept = document.getElementById("filterDept").value;
+    if (dept) params.set("departmentId", dept);
+    if (document.getElementById("filterActive").value === "true") {
+        params.set("activeOnly", "true");
+    }
+    return `${API}?${params}`;
+}
+
+function renderRows(items) {
+    let html = "";
+    items.forEach((m) => {
+        const idAttr = App.escapeAttr(String(m.id));
+        const dept = m.department
+            ? `${App.escapeHtml(m.department.code)} — ${App.escapeHtml(m.department.name)}`
+            : "—";
+        html += `<tr>
+            <td><code>${App.escapeHtml(m.code)}</code></td>
+            <td>${App.escapeHtml(m.name)}</td>
+            <td><small>${dept}</small></td>
+            <td><small>${App.formatDateTime(m.effectiveDate)}</small></td>
+            <td>${statusBadge(m.isActive)}</td>
+            <td class="text-nowrap">
+                <button type="button" class="btn btn-warning btn-sm" data-action="edit" data-id="${idAttr}">Sửa</button>
+                <button type="button" class="btn btn-outline-secondary btn-sm" data-action="toggle" data-id="${idAttr}" data-active="${m.isActive}">${m.isActive ? "Khóa" : "Mở"}</button>
+                <button type="button" class="btn btn-danger btn-sm" data-action="delete" data-id="${idAttr}">Xóa</button>
+            </td></tr>`;
+    });
+    document.getElementById("majorTable").innerHTML =
+        html || '<tr><td colspan="6" class="text-center text-muted py-4">Không có dữ liệu</td></tr>';
+}
+
+function updatePagination(data) {
+    state.totalPages = data.totalPages;
+    document.getElementById("pageInfo").textContent =
+        `Trang ${data.page + 1} / ${Math.max(data.totalPages, 1)} · ${data.totalElements} ngành`;
+    document.getElementById("btnPrev").disabled = data.page <= 0;
+    document.getElementById("btnNext").disabled = data.page >= data.totalPages - 1;
+}
+
+async function loadMajors() {
+    try {
+        const data = await App.fetchJson(buildQuery());
+        renderRows(data.content);
+        updatePagination(data);
+        App.hideBanner("formAlert");
+    } catch (err) {
+        App.showBanner("formAlert", err.message);
+    }
+}
+
+function applyFilters() {
+    state.page = 0;
+    loadMajors();
+}
+
+function changePage(delta) {
+    const next = state.page + delta;
+    if (next < 0 || next >= state.totalPages) return;
+    state.page = next;
+    loadMajors();
+}
+
+async function loadDepartments() {
+    const list = await App.fetchJson(DEPT_API);
+    const sel = document.getElementById("departmentId");
+    const filter = document.getElementById("filterDept");
+    sel.innerHTML = '<option value="">-- Chọn khoa --</option>';
+    filter.innerHTML = '<option value="">Tất cả khoa</option>';
+    list.forEach((d) => {
+        const opt = `<option value="${App.escapeAttr(String(d.id))}">${App.escapeHtml(d.code)} — ${App.escapeHtml(d.name)}</option>`;
+        sel.innerHTML += opt;
+        filter.innerHTML += opt;
+    });
+}
+
+function buildPayload() {
+    const actorRaw = document.getElementById("actor").value.trim();
+    return {
+        departmentId: document.getElementById("departmentId").value || null,
+        code: document.getElementById("code").value.trim(),
+        name: document.getElementById("name").value.trim(),
+        description: document.getElementById("description").value.trim() || null,
+        effectiveDate: App.fromLocalInputValue(document.getElementById("effectiveDate").value),
+        expiryDate: App.fromLocalInputValue(document.getElementById("expiryDate").value),
+        isActive: document.getElementById("isActive").checked,
+        actor: actorRaw || null
+    };
+}
+
+async function saveMajor() {
+    clearFieldErrors();
+    App.hideBanner("formAlert");
+    const idVal = document.getElementById("id").value;
+    const url = idVal ? `${API}/${encodeURIComponent(idVal)}` : API;
+    const method = idVal ? "PUT" : "POST";
+    try {
+        await App.fetchJson(url, {
+            method,
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(buildPayload())
+        });
+        App.toast(idVal ? "Cập nhật thành công" : "Thêm ngành thành công");
+        resetForm();
+        loadMajors();
+    } catch (err) {
+        App.showBanner("formAlert", err.message);
+        showFieldErrors(err.errors);
+    }
+}
+
+function resetForm() {
+    document.getElementById("id").value = "";
+    document.getElementById("code").value = "";
+    document.getElementById("name").value = "";
+    document.getElementById("departmentId").value = "";
+    document.getElementById("description").value = "";
+    document.getElementById("effectiveDate").value = "";
+    document.getElementById("expiryDate").value = "";
+    document.getElementById("actor").value = "";
+    document.getElementById("isActive").checked = true;
+    document.getElementById("formTitle").innerText = "Thêm ngành mới";
+    clearFieldErrors();
+    App.hideBanner("formAlert");
+}
+
+document.getElementById("majorTable").addEventListener("click", async (e) => {
+    const btn = e.target.closest("button[data-action]");
+    if (!btn) return;
+    const id = btn.dataset.id;
+    if (btn.dataset.action === "edit") {
+        try {
+            const m = await App.fetchJson(`${API}/${encodeURIComponent(id)}`);
+            document.getElementById("id").value = m.id;
+            document.getElementById("code").value = m.code ?? "";
+            document.getElementById("name").value = m.name ?? "";
+            document.getElementById("departmentId").value = m.department?.id ?? "";
+            document.getElementById("description").value = m.description ?? "";
+            document.getElementById("effectiveDate").value = App.toLocalInputValue(m.effectiveDate);
+            document.getElementById("expiryDate").value = App.toLocalInputValue(m.expiryDate);
+            document.getElementById("isActive").checked = !!m.isActive;
+            document.getElementById("actor").value = m.updatedBy || m.createdBy || "";
+            document.getElementById("formTitle").innerText = "Cập nhật ngành";
+            window.scrollTo({ top: 0, behavior: "smooth" });
+        } catch (err) {
+            App.toast(err.message, "error");
+        }
+    } else if (btn.dataset.action === "delete") {
+        if (!confirm("Xóa mềm ngành này?")) return;
+        const actor = document.getElementById("actor").value.trim();
+        let url = `${API}/${encodeURIComponent(id)}`;
+        if (actor) url += `?deletedBy=${encodeURIComponent(actor)}`;
+        try {
+            await App.fetchJson(url, { method: "DELETE" });
+            App.toast("Đã xóa mềm");
+            loadMajors();
+        } catch (err) {
+            App.toast(err.message, "error");
+        }
+    } else if (btn.dataset.action === "toggle") {
+        const active = btn.dataset.active !== "true";
+        try {
+            await App.fetchJson(`${API}/${encodeURIComponent(id)}/active?active=${active}`, { method: "PATCH" });
+            App.toast(active ? "Đã mở khóa" : "Đã khóa ngành");
+            loadMajors();
+        } catch (err) {
+            App.toast(err.message, "error");
+        }
+    }
+});
+
+document.getElementById("search").addEventListener("keydown", (e) => {
+    if (e.key === "Enter") applyFilters();
+});
+
+loadDepartments().then(loadMajors);
+</script>
+</body>
+</html>

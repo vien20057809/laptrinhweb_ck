@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Chương trình đào tạo</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+<div class="app-layout">
+    <aside class="app-sidebar">
+        <div class="app-brand">School Manager</div>
+        <div class="app-brand-sub">Quản lý đào tạo</div>
+        <ul class="app-menu">
+            <li><a href="/index.html" data-page="home">Trang chủ</a></li>
+            <li><a href="/students.html" data-page="students">Sinh viên</a></li>
+            <li><a href="/majors.html" data-page="majors">Ngành học</a></li>
+            <li><a href="/training-programs.html" data-page="training-programs" class="active">CTĐT</a></li>
+            <li><a href="/courses.html" data-page="courses">Học phần</a></li>
+            <li><a href="/program-courses.html" data-page="program-courses">HP trong CTĐT</a></li>
+        </ul>
+    </aside>
+
+    <main class="app-main">
+        <header class="page-header">
+            <h1>Chương trình đào tạo</h1>
+            <p>Bảng <code>training_programs</code> — CRUD, phân trang, xóa mềm.</p>
+        </header>
+
+        <div id="formAlert" class="alert-banner"></div>
+
+        <div class="split-layout">
+            <div>
+                <section class="panel">
+                    <div class="toolbar">
+                        <input type="text" id="search" class="form-control toolbar-grow" placeholder="Tìm mã hoặc tên CTĐT...">
+                        <select id="filterMajor" class="form-select"><option value="">Tất cả ngành</option></select>
+                        <select id="filterDept" class="form-select"><option value="">Tất cả khoa</option></select>
+                        <select id="filterActive" class="form-select">
+                            <option value="">Mọi trạng thái</option>
+                            <option value="true">Chỉ đang hoạt động</option>
+                        </select>
+                        <button class="btn btn-primary btn-sm" onclick="applyFilters()">Áp dụng</button>
+                    </div>
+                </section>
+
+                <section class="panel table-panel">
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-sm mb-0">
+                            <thead>
+                            <tr>
+                                <th>Mã</th>
+                                <th>Tên CTĐT</th>
+                                <th>Ngành / Khoa</th>
+                                <th>Tín chỉ</th>
+                                <th>Trạng thái</th>
+                                <th></th>
+                            </tr>
+                            </thead>
+                            <tbody id="dataTable"></tbody>
+                        </table>
+                    </div>
+                    <div class="pagination-bar">
+                        <span id="pageInfo">—</span>
+                        <div class="btn-group">
+                            <button class="btn btn-outline-secondary btn-sm" id="btnPrev" onclick="changePage(-1)">Trước</button>
+                            <button class="btn btn-outline-secondary btn-sm" id="btnNext" onclick="changePage(1)">Sau</button>
+                        </div>
+                    </div>
+                </section>
+            </div>
+
+            <section class="panel form-section">
+                <div class="panel-title" id="formTitle">Thêm CTĐT mới</div>
+                <input id="id" type="hidden">
+
+                <div class="mb-2">
+                    <label class="form-label">Mã CTĐT *</label>
+                    <input id="code" class="form-control" maxlength="100">
+                </div>
+                <div class="mb-2">
+                    <label class="form-label">Tên CTĐT *</label>
+                    <input id="name" class="form-control" maxlength="255">
+                </div>
+                <div class="mb-2">
+                    <label class="form-label">Tên tiếng Anh</label>
+                    <input id="nameEn" class="form-control" maxlength="255">
+                </div>
+                <div class="mb-2">
+                    <label class="form-label">Ngành *</label>
+                    <select id="majorId" class="form-select"></select>
+                </div>
+                <div class="mb-2">
+                    <label class="form-label">Khoa *</label>
+                    <select id="departmentId" class="form-select"></select>
+                </div>
+                <div class="row g-2 mb-2">
+                    <div class="col-6">
+                        <label class="form-label">Bậc đào tạo</label>
+                        <input id="degreeLevel" class="form-control" maxlength="50">
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label">Hình thức</label>
+                        <input id="educationType" class="form-control" maxlength="50">
+                    </div>
+                </div>
+                <div class="row g-2 mb-2">
+                    <div class="col-6">
+                        <label class="form-label">Tổng TC</label>
+                        <input id="totalCredits" type="number" step="0.1" class="form-control">
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label">TC bắt buộc</label>
+                        <input id="requiredCredits" type="number" step="0.1" class="form-control">
+                    </div>
+                </div>
+                <div class="row g-2 mb-2">
+                    <div class="col-6">
+                        <label class="form-label">Năm tuyển sinh</label>
+                        <input id="admissionYear" type="date" class="form-control">
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label">Thời gian (năm)</label>
+                        <input id="durationYears" type="number" step="0.1" class="form-control">
+                    </div>
+                </div>
+                <div class="row g-2 mb-2">
+                    <div class="col-6">
+                        <label class="form-label">Hiệu lực</label>
+                        <input id="effectiveDate" type="date" class="form-control">
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label">Hết hiệu lực</label>
+                        <input id="expiryDate" type="date" class="form-control">
+                    </div>
+                </div>
+                <div class="row g-2 mb-2">
+                    <div class="col-6">
+                        <label class="form-label">Phiên bản</label>
+                        <input id="version" class="form-control" maxlength="20">
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label">Trạng thái</label>
+                        <input id="status" class="form-control" maxlength="20" placeholder="ACTIVE">
+                    </div>
+                </div>
+                <div class="mb-2">
+                    <label class="form-label">Mô tả</label>
+                    <textarea id="description" class="form-control" rows="2"></textarea>
+                </div>
+                <div class="mb-2">
+                    <label class="form-label">Người thao tác</label>
+                    <input id="actor" type="text" class="form-control" maxlength="255">
+                </div>
+                <div class="form-check mb-3">
+                    <input class="form-check-input" type="checkbox" id="isActive" checked>
+                    <label class="form-check-label" for="isActive">Đang hoạt động</label>
+                </div>
+
+                <button class="btn btn-primary w-100 mb-2" onclick="saveItem()">Lưu</button>
+                <button class="btn btn-outline-secondary w-100" onclick="resetForm()">Hủy / Thêm mới</button>
+            </section>
+        </div>
+    </main>
+</div>
+
+<script src="/js/app.js"></script>
+<script>
+const API = App.baseUrl + "/api/training-programs";
+const MAJOR_API = App.baseUrl + "/api/majors";
+const DEPT_API = App.baseUrl + "/api/departments";
+App.setActiveNav("training-programs");
+
+let state = { page: 0, size: 8, totalPages: 0 };
+
+function statusBadge(active) {
+    return active
+        ? '<span class="badge bg-success badge-status">Hoạt động</span>'
+        : '<span class="badge bg-secondary badge-status">Khóa</span>';
+}
+
+function num(v) { return v != null ? v : "—"; }
+
+function buildQuery() {
+    const params = new URLSearchParams();
+    params.set("page", state.page);
+    params.set("size", state.size);
+    params.set("sort", "code");
+    const q = document.getElementById("search").value.trim();
+    if (q) params.set("q", q);
+    const major = document.getElementById("filterMajor").value;
+    if (major) params.set("majorId", major);
+    const dept = document.getElementById("filterDept").value;
+    if (dept) params.set("departmentId", dept);
+    if (document.getElementById("filterActive").value === "true") params.set("activeOnly", "true");
+    return `${API}?${params}`;
+}
+
+function renderRows(items) {
+    let html = "";
+    items.forEach((t) => {
+        const idAttr = App.escapeAttr(String(t.id));
+        const major = t.major ? App.escapeHtml(t.major.code) : "—";
+        const dept = t.department ? App.escapeHtml(t.department.code) : "—";
+        html += `<tr>
+            <td><code>${App.escapeHtml(t.code)}</code></td>
+            <td>${App.escapeHtml(t.name)}</td>
+            <td><small>${major} / ${dept}</small></td>
+            <td>${num(t.totalCredits)}</td>
+            <td>${statusBadge(t.isActive)}</td>
+            <td class="text-nowrap">
+                <button type="button" class="btn btn-warning btn-sm" data-action="edit" data-id="${idAttr}">Sửa</button>
+                <button type="button" class="btn btn-outline-secondary btn-sm" data-action="toggle" data-id="${idAttr}" data-active="${t.isActive}">${t.isActive ? "Khóa" : "Mở"}</button>
+                <button type="button" class="btn btn-danger btn-sm" data-action="delete" data-id="${idAttr}">Xóa</button>
+            </td></tr>`;
+    });
+    document.getElementById("dataTable").innerHTML =
+        html || '<tr><td colspan="6" class="text-center text-muted py-4">Không có dữ liệu</td></tr>';
+}
+
+async function loadList() {
+    try {
+        const data = await App.fetchJson(buildQuery());
+        renderRows(data.content);
+        state.totalPages = data.totalPages;
+        document.getElementById("pageInfo").textContent =
+            `Trang ${data.page + 1} / ${Math.max(data.totalPages, 1)} · ${data.totalElements} CTĐT`;
+        document.getElementById("btnPrev").disabled = data.page <= 0;
+        document.getElementById("btnNext").disabled = data.page >= data.totalPages - 1;
+        App.hideBanner("formAlert");
+    } catch (err) {
+        App.showBanner("formAlert", err.message);
+    }
+}
+
+function applyFilters() { state.page = 0; loadList(); }
+function changePage(d) {
+    const next = state.page + d;
+    if (next < 0 || next >= state.totalPages) return;
+    state.page = next;
+    loadList();
+}
+
+async function loadLookups() {
+    const [majors, depts] = await Promise.all([
+        App.fetchJson(`${MAJOR_API}?size=50`),
+        App.fetchJson(DEPT_API)
+    ]);
+    const majorSel = document.getElementById("majorId");
+    const filterMajor = document.getElementById("filterMajor");
+    majorSel.innerHTML = '<option value="">-- Chọn ngành --</option>';
+    filterMajor.innerHTML = '<option value="">Tất cả ngành</option>';
+    majors.content.forEach((m) => {
+        const opt = `<option value="${App.escapeAttr(String(m.id))}">${App.escapeHtml(m.code)} — ${App.escapeHtml(m.name)}</option>`;
+        majorSel.innerHTML += opt;
+        filterMajor.innerHTML += opt;
+    });
+    const deptSel = document.getElementById("departmentId");
+    const filterDept = document.getElementById("filterDept");
+    deptSel.innerHTML = '<option value="">-- Chọn khoa --</option>';
+    filterDept.innerHTML = '<option value="">Tất cả khoa</option>';
+    depts.forEach((d) => {
+        const opt = `<option value="${App.escapeAttr(String(d.id))}">${App.escapeHtml(d.code)} — ${App.escapeHtml(d.name)}</option>`;
+        deptSel.innerHTML += opt;
+        filterDept.innerHTML += opt;
+    });
+}
+
+function parseNum(id) {
+    const v = document.getElementById(id).value;
+    return v === "" ? null : Number(v);
+}
+
+function buildPayload() {
+    return {
+        code: document.getElementById("code").value.trim(),
+        name: document.getElementById("name").value.trim(),
+        nameEn: document.getElementById("nameEn").value.trim() || null,
+        majorId: document.getElementById("majorId").value || null,
+        departmentId: document.getElementById("departmentId").value || null,
+        degreeLevel: document.getElementById("degreeLevel").value.trim() || null,
+        educationType: document.getElementById("educationType").value.trim() || null,
+        totalCredits: parseNum("totalCredits"),
+        requiredCredits: parseNum("requiredCredits"),
+        admissionYear: App.fromDateInputValue(document.getElementById("admissionYear").value),
+        durationYears: parseNum("durationYears"),
+        effectiveDate: App.fromDateInputValue(document.getElementById("effectiveDate").value),
+        expiryDate: App.fromDateInputValue(document.getElementById("expiryDate").value),
+        version: document.getElementById("version").value.trim() || null,
+        status: document.getElementById("status").value.trim() || null,
+        description: document.getElementById("description").value.trim() || null,
+        isActive: document.getElementById("isActive").checked,
+        actor: document.getElementById("actor").value.trim() || null
+    };
+}
+
+async function saveItem() {
+    App.hideBanner("formAlert");
+    const idVal = document.getElementById("id").value;
+    const url = idVal ? `${API}/${encodeURIComponent(idVal)}` : API;
+    try {
+        await App.fetchJson(url, {
+            method: idVal ? "PUT" : "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(buildPayload())
+        });
+        App.toast(idVal ? "Cập nhật thành công" : "Thêm CTĐT thành công");
+        resetForm();
+        loadList();
+    } catch (err) {
+        App.showBanner("formAlert", err.message);
+    }
+}
+
+function resetForm() {
+    document.getElementById("id").value = "";
+    ["code","name","nameEn","degreeLevel","educationType","totalCredits","requiredCredits",
+     "admissionYear","durationYears","effectiveDate","expiryDate","version","status","description","actor"]
+        .forEach((id) => { document.getElementById(id).value = ""; });
+    document.getElementById("majorId").value = "";
+    document.getElementById("departmentId").value = "";
+    document.getElementById("isActive").checked = true;
+    document.getElementById("formTitle").innerText = "Thêm CTĐT mới";
+    App.hideBanner("formAlert");
+}
+
+document.getElementById("dataTable").addEventListener("click", async (e) => {
+    const btn = e.target.closest("button[data-action]");
+    if (!btn) return;
+    const id = btn.dataset.id;
+    if (btn.dataset.action === "edit") {
+        const t = await App.fetchJson(`${API}/${encodeURIComponent(id)}`);
+        document.getElementById("id").value = t.id;
+        document.getElementById("code").value = t.code ?? "";
+        document.getElementById("name").value = t.name ?? "";
+        document.getElementById("nameEn").value = t.nameEn ?? "";
+        document.getElementById("majorId").value = t.major?.id ?? "";
+        document.getElementById("departmentId").value = t.department?.id ?? "";
+        document.getElementById("degreeLevel").value = t.degreeLevel ?? "";
+        document.getElementById("educationType").value = t.educationType ?? "";
+        document.getElementById("totalCredits").value = t.totalCredits ?? "";
+        document.getElementById("requiredCredits").value = t.requiredCredits ?? "";
+        document.getElementById("admissionYear").value = App.toDateInputValue(t.admissionYear);
+        document.getElementById("durationYears").value = t.durationYears ?? "";
+        document.getElementById("effectiveDate").value = App.toDateInputValue(t.effectiveDate);
+        document.getElementById("expiryDate").value = App.toDateInputValue(t.expiryDate);
+        document.getElementById("version").value = t.version ?? "";
+        document.getElementById("status").value = t.status ?? "";
+        document.getElementById("description").value = t.description ?? "";
+        document.getElementById("isActive").checked = !!t.isActive;
+        document.getElementById("actor").value = t.updatedBy || t.createdBy || "";
+        document.getElementById("formTitle").innerText = "Cập nhật CTĐT";
+    } else if (btn.dataset.action === "delete") {
+        if (!confirm("Xóa mềm CTĐT này?")) return;
+        const actor = document.getElementById("actor").value.trim();
+        let url = `${API}/${encodeURIComponent(id)}`;
+        if (actor) url += `?deletedBy=${encodeURIComponent(actor)}`;
+        await App.fetchJson(url, { method: "DELETE" });
+        App.toast("Đã xóa mềm");
+        loadList();
+    } else if (btn.dataset.action === "toggle") {
+        const active = btn.dataset.active !== "true";
+        await App.fetchJson(`${API}/${encodeURIComponent(id)}/active?active=${active}`, { method: "PATCH" });
+        App.toast(active ? "Đã mở khóa" : "Đã khóa");
+        loadList();
+    }
+});
+
+document.getElementById("search").addEventListener("keydown", (e) => {
+    if (e.key === "Enter") applyFilters();
+});
+
+loadLookups().then(loadList);
+</script>
+</body>
+</html>
